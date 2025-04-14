@@ -82,22 +82,6 @@ OpenGL/gl3.h
 GL/glew.h
 -
 
-/home/hyf/graphics/pj1/src/surf.cpp
-surf.h
-/home/hyf/graphics/pj1/src/surf.h
-vertexrecorder.h
-/home/hyf/graphics/pj1/src/vertexrecorder.h
-iostream
--
-
-/home/hyf/graphics/pj1/src/surf.h
-curve.h
-/home/hyf/graphics/pj1/src/curve.h
-tuple.h
-/home/hyf/graphics/pj1/src/tuple.h
-iostream
--
-
 /home/hyf/graphics/pj1/src/tuple.h
 cstdarg
 -
