@@ -41,13 +41,14 @@ Surface quad()
     return ret;
 }
 
-void addTriangle(Surface &surface, int stripLength)
+// 将规则排列的点连接为三角形网格
+void addGridFaces(Surface &surface, int stripLength)
 {
     int vertCount = surface.VV.size();
     int rows = vertCount / stripLength;
 
-    for (int i = 0; i < rows - 1; ++i) {
-        for (int j = 0; j < stripLength - 1; ++j) {
+    for (int i = 0; i < rows - 1; i++) {
+        for (int j = 0; j < stripLength - 1; j++) {
             int curr = i * stripLength + j;
             int next = (i + 1) * stripLength + j;
 
@@ -57,11 +58,10 @@ void addTriangle(Surface &surface, int stripLength)
     }
 }
 
-
+// 构造旋转曲面
 Surface makeSurfRev(const Curve &profile, unsigned steps)
 {
     Surface surface;
-    // surface = quad();
 
     if (!checkFlat(profile))
     {
@@ -70,36 +70,35 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
     }
 
     // TODO: Here you should build the surface.  See surf.h for details.
-
-    // cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
     int n = profile.size();
     for (int i = 0; i < steps; i++)
     {
         float t = 2.0f * c_pi * float(i) / steps;
-        float ct = cos(t);
-        float st = sin(t);
+        Matrix4f rotY = Matrix4f::rotateY(t);
 
-        Matrix4f rotY = Matrix4f::rotateY(2.0f * c_pi * i / steps);
         for (const auto &p : profile) {
             Vector3f V = (rotY * Vector4f(p.V, 1)).xyz();
             Vector3f N = (rotY.getSubmatrix3x3(0, 0) * p.N).normalized();
             surface.VV.push_back(V);
-            surface.VN.push_back(-N); // 注意方向
+            surface.VN.push_back(-N); // 注意法线方向
         }
     }
+
+    // 补上首行作为最后一行，形成闭环
     for (int j = 0; j < n; j++)
     {
         surface.VV.push_back(surface.VV[j]);
         surface.VN.push_back(surface.VN[j]);
     }
-    addTriangle(surface, n);
+
+    addGridFaces(surface, n);
     return surface;
 }
 
+// 构造广义柱面
 Surface makeGenCyl(const Curve &profile, const Curve &sweep)
 {
     Surface surface;
-    // surface = quad();
 
     if (!checkFlat(profile))
     {
@@ -108,45 +107,43 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep)
     }
 
     // TODO: Here you should build the surface.  See surf.h for details.
-
-    // cerr << "\t>>> makeGenCyl called (but not implemented).\n\t>>> Returning empty surface." << endl;
-
     const int profSize = profile.size();
-	const int sweepSize = sweep.size();
+    const int sweepSize = sweep.size();
 
-	auto buildFrame = [](const CurvePoint &cp) -> Matrix4f {
-		Matrix4f mat;
-		mat.setCol(0, Vector4f(cp.N, 0));
-		mat.setCol(1, Vector4f(cp.B, 0));
-		mat.setCol(2, Vector4f(cp.T, 0));
-		mat.setCol(3, Vector4f(cp.V, 1));
-		return mat;
-	};
+    // 利用 TNB 构造变换矩阵
+    auto buildFrame = [](const CurvePoint &cp) -> Matrix4f {
+        Matrix4f mat;
+        mat.setCol(0, Vector4f(cp.N, 0));
+        mat.setCol(1, Vector4f(cp.B, 0));
+        mat.setCol(2, Vector4f(cp.T, 0));
+        mat.setCol(3, Vector4f(cp.V, 1));
+        return mat;
+    };
 
-	for (int i = 0; i < sweepSize; ++i) {
-		Matrix4f frame = buildFrame(sweep[i]);
-		Matrix3f rot = frame.getSubmatrix3x3(0, 0);
+    for (int i = 0; i < sweepSize; ++i) {
+        Matrix4f frame = buildFrame(sweep[i]);
+        Matrix3f rot = frame.getSubmatrix3x3(0, 0);
 
-		for (int j = 0; j < profSize; ++j) {
-			Vector3f transformedV = (frame * Vector4f(profile[j].V, 1)).xyz();
-			Vector3f transformedN = -(rot * profile[j].N).normalized();
+        for (int j = 0; j < profSize; ++j) {
+            Vector3f transformedV = (frame * Vector4f(profile[j].V, 1)).xyz();
+            Vector3f transformedN = -(rot * profile[j].N).normalized();
 
-			surface.VV.push_back(transformedV);
-			surface.VN.push_back(transformedN);
-		}
-	}
+            surface.VV.push_back(transformedV);
+            surface.VN.push_back(transformedN);
+        }
+    }
 
-	// 若首尾相接，需要手动闭合一圈避免缝隙
-	bool isClosed = (sweep.front().V - sweep.back().V).abs() < 1e-6f;
-	if (isClosed) {
-		for (int j = 0; j < profSize; ++j) {
-			surface.VV.push_back(surface.VV[j]);
-			surface.VN.push_back(surface.VN[j]);
-		}
-	}
+    // 若首尾位置重合，闭合一圈防止缝隙
+    bool isClosed = (sweep.front().V - sweep.back().V).abs() < 1e-6f;
+    if (isClosed) {
+        for (int j = 0; j < profSize; ++j) {
+            surface.VV.push_back(surface.VV[j]);
+            surface.VN.push_back(surface.VN[j]);
+        }
+    }
 
-	addTriangle(surface, profSize);
-	return surface;
+    addGridFaces(surface, profSize);
+    return surface;
 }
 
 void recordSurface(const Surface &surface, VertexRecorder *recorder)
