@@ -1,0 +1,6 @@
+/home/hyf/graphics/pj2/build/CMakeFiles/rebuild_cache.dir
+/home/hyf/graphics/pj2/build/CMakeFiles/edit_cache.dir
+/home/hyf/graphics/pj2/build/CMakeFiles/a2.dir
+/home/hyf/graphics/pj2/build/vecmath/CMakeFiles/rebuild_cache.dir
+/home/hyf/graphics/pj2/build/vecmath/CMakeFiles/edit_cache.dir
+/home/hyf/graphics/pj2/build/vecmath/CMakeFiles/vecmath.dir
